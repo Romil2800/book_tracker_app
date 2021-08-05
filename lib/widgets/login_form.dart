@@ -1,14 +1,14 @@
 import 'package:firebase_auth/firebase_auth.dart';
-
+import '../screens/main_screen.dart';
 import '../widgets/input_decoration.dart';
 import 'package:flutter/material.dart';
 
 class LoginForm extends StatelessWidget {
   const LoginForm({
-    Key? key,
-    required GlobalKey<FormState> formKey,
-    required TextEditingController emailTextController,
-    required TextEditingController passwordTextController,
+    Key key,
+    @required GlobalKey<FormState> formKey,
+    @required TextEditingController emailTextController,
+    @required TextEditingController passwordTextController,
   })  : _formKey = formKey,
         _emailTextController = emailTextController,
         _passwordTextController = passwordTextController,
@@ -27,7 +27,7 @@ class LoginForm extends StatelessWidget {
           padding: const EdgeInsets.all(15.0),
           child: TextFormField(
             validator: (value) {
-              return value!.isEmpty ? 'Please add an email' : null;
+              return value.isEmpty ? 'Please add an email' : null;
             },
             controller: _emailTextController,
             decoration: buildInputDecoration('Enter email', 'john@me.com'),
@@ -37,7 +37,7 @@ class LoginForm extends StatelessWidget {
           padding: const EdgeInsets.all(15.0),
           child: TextFormField(
             validator: (value) {
-              return value!.isEmpty ? 'Please enter a password' : null;
+              return value.isEmpty ? 'Please enter a password' : null;
             },
             controller: _passwordTextController,
             decoration: buildInputDecoration('Enter Password', 'John@123'),
@@ -57,13 +57,19 @@ class LoginForm extends StatelessWidget {
             textStyle: TextStyle(fontSize: 18),
           ),
           onPressed: () {
-            if (_formKey.currentState!.validate()) {
+            if (_formKey.currentState.validate()) {
               FirebaseAuth.instance
                   .signInWithEmailAndPassword(
-                    email: _emailTextController.text,
-                    password: _passwordTextController.text,
-                  )
-                  .then((value) => print(value.user!.uid));
+                email: _emailTextController.text,
+                password: _passwordTextController.text,
+              )
+                  .then((value) {
+                return Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => MainScreenPage(),
+                    ));
+              });
             }
           },
           child: Text('Sign In'),
