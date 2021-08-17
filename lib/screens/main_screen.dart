@@ -1,5 +1,7 @@
 import 'package:book_tracker_app/constants/constants.dart';
 import 'package:book_tracker_app/model/book.dart';
+import 'package:book_tracker_app/widgets/book_details_dialog.dart';
+import 'package:provider/provider.dart';
 import '../widgets/reading_list_card.dart';
 import '../widgets/book_search.dart';
 import '../widgets/create_profile.dart';
@@ -17,6 +19,11 @@ class MainScreenPage extends StatelessWidget {
         FirebaseFirestore.instance.collection('users');
     CollectionReference bookCollectionReference =
         FirebaseFirestore.instance.collection('books');
+    List<Book> userBooksReadList = [];
+    int booksRead = 0;
+
+    var authUser = Provider.of<User>(context);
+
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Colors.white24,
@@ -25,6 +32,10 @@ class MainScreenPage extends StatelessWidget {
         centerTitle: false,
         title: Row(
           children: [
+            Image.asset(
+              'assets/Icon-76.png',
+              scale: 2,
+            ),
             Text(
               'A.Reader',
               style: Theme.of(context).textTheme.headline6.copyWith(
@@ -53,10 +64,10 @@ class MainScreenPage extends StatelessWidget {
                 );
               }
 
-              final userListStream = snapshot.data.docs.map((users) {
-                return MUser.fromDocuments(users);
+              final userListStream = snapshot.data.docs.map((user) {
+                return MUser.fromDocuments(user);
               }).where((user) {
-                return (user.uid == FirebaseAuth.instance.currentUser.uid);
+                return (user.uid == authUser.uid);
               }).toList();
 
               MUser curUser = userListStream[0];
@@ -99,7 +110,7 @@ class MainScreenPage extends StatelessWidget {
                                       ],
                                     ),
                                     Text(
-                                      'Books Read',
+                                      'Books Read: $booksRead',
                                       style: Theme.of(context)
                                           .textTheme
                                           .bodyText1
@@ -124,7 +135,9 @@ class MainScreenPage extends StatelessWidget {
                                               context: context,
                                               builder: (context) {
                                                 return createProfileDialog(
-                                                    context, curUser);
+                                                  context,
+                                                  curUser,
+                                                );
                                               },
                                             );
                                           },
@@ -196,6 +209,40 @@ class MainScreenPage extends StatelessWidget {
                                               ),
                                             ),
                                           ],
+                                        ),
+                                      ),
+                                    ),
+                                    Expanded(
+                                      child: Container(
+                                        width:
+                                            MediaQuery.of(context).size.width *
+                                                0.5,
+                                        child: ListView.builder(
+                                          itemCount: booksRead,
+                                          itemBuilder: (context, index) {
+                                            Book book =
+                                                userBooksReadList[index];
+                                            return Card(
+                                              elevation: 2.0,
+                                              child: Column(
+                                                children: [
+                                                  ListTile(
+                                                    title:
+                                                        Text('${book.title}'),
+                                                    leading: CircleAvatar(
+                                                      radius: 35,
+                                                      backgroundImage:
+                                                          NetworkImage(
+                                                              book.photoUrl),
+                                                    ),
+                                                    subtitle:
+                                                        Text('${book.author}'),
+                                                  ),
+                                                  Text('Finished on:'),
+                                                ],
+                                              ),
+                                            );
+                                          },
                                         ),
                                       ),
                                     )
@@ -274,25 +321,59 @@ class MainScreenPage extends StatelessWidget {
               var userBookFilteredReadListStream =
                   snapshot.data.docs.map((book) {
                 return Book.fromDocument(book);
+              }).where((book) {
+                return //(book.userId == authUser.uid) &&
+                    (book.startedReading != null) &&
+                        (book.finishedReading == null);
               }).toList();
+
+              userBooksReadList = snapshot.data.docs.map((book) {
+                return Book.fromDocument(book);
+              }).where((book) {
+                return //(book.userId == authUser.uid) &&
+                    (book.startedReading != null) &&
+                        (book.finishedReading == null);
+              }).toList();
+              booksRead = userBooksReadList.length;
+
               return Expanded(
                 flex: 1,
-                child: ListView.builder(
-                  scrollDirection: Axis.horizontal,
-                  itemCount: userBookFilteredReadListStream.length,
-                  itemBuilder: (context, index) {
-                    Book book = userBookFilteredReadListStream[index];
-                    return ReadingListCard(
-                      rating: 5.0,
-                      buttonText: 'Reading',
-                      image: book.photoUrl != null
-                          ? book.photoUrl
-                          : 'http://books.google.com/books/content?id=RvcRAQAAMAAJ&printsec=frontcover&img=1&zoom=1&edge=curl&source=gbs_api',
-                      title: book.title,
-                      author: book.author,
-                    );
-                  },
-                ),
+                child: (userBookFilteredReadListStream.length > 0)
+                    ? ListView.builder(
+                        scrollDirection: Axis.horizontal,
+                        itemCount: userBookFilteredReadListStream.length,
+                        itemBuilder: (context, index) {
+                          Book book = userBookFilteredReadListStream[index];
+                          return InkWell(
+                            child: ReadingListCard(
+                              rating: book.rating != null ? (book.rating) : 4.0,
+                              buttonText: 'Reading',
+                              image: book.photoUrl,
+                              title: book.title,
+                              author: book.author,
+                            ),
+                            onTap: () {
+                              showDialog(
+                                context: context,
+                                builder: (context) {
+                                  return BookDetailsDialog(
+                                    book: book,
+                                  );
+                                },
+                              );
+                            },
+                          );
+                        },
+                      )
+                    : Center(
+                        child: Text(
+                          'You have\'t started reading. \nStart by adding a book',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
               );
             },
           ),
@@ -333,6 +414,10 @@ class MainScreenPage extends StatelessWidget {
 
               var readingListBook = snapshot.data.docs.map((book) {
                 return Book.fromDocument(book);
+              }).where((book) {
+                return //(book.userId == authUser.uid) &&
+                    (book.finishedReading == null) &&
+                        (book.startedReading == null);
               }).toList();
               return Expanded(
                 flex: 1,
@@ -343,12 +428,21 @@ class MainScreenPage extends StatelessWidget {
                         itemBuilder: (context, index) {
                           Book book = readingListBook[index];
 
-                          return ReadingListCard(
-                            buttonText: 'Not Started',
-                            rating: 4.3,
-                            author: book.author,
-                            image: book.photoUrl,
-                            title: book.title,
+                          return InkWell(
+                            child: ReadingListCard(
+                              buttonText: 'Not Started',
+                              rating: book.rating != null ? (book.rating) : 4.0,
+                              author: book.author,
+                              image: book.photoUrl,
+                              title: book.title,
+                            ),
+                            onTap: () {
+                              showDialog(
+                                context: context,
+                                builder: (context) =>
+                                    BookDetailsDialog(book: book),
+                              );
+                            },
                           );
                         },
                       )

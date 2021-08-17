@@ -1,3 +1,5 @@
+import 'package:book_tracker_app/constants/constants.dart';
+import 'package:book_tracker_app/widgets/two_sided_rounded_button.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -84,8 +86,11 @@ class SearchBookDetailDialog extends StatelessWidget {
       actions: [
         Padding(
           padding: const EdgeInsets.all(8.0),
-          child: TextButton(
-            onPressed: () {
+          child: TwoSidedRoundedButton(
+            color: kButtonColor,
+            radius: 30,
+            text: 'Save',
+            press: () {
               _bookCollectionReference.add(Book(
                 userId: FirebaseAuth.instance.currentUser.uid,
                 title: book.title,
@@ -98,18 +103,18 @@ class SearchBookDetailDialog extends StatelessWidget {
               ).toMap());
               Navigator.of(context).pop();
             },
-            child: Text('Save'),
           ),
         ),
         Padding(
-          padding: const EdgeInsets.all(8.0),
-          child: TextButton(
-            onPressed: () {
-              Navigator.of(context).pop();
-            },
-            child: Text('Cancel'),
-          ),
-        ),
+            padding: const EdgeInsets.all(8.0),
+            child: TwoSidedRoundedButton(
+              radius: 30,
+              color: kButtonColor,
+              text: 'Cancel',
+              press: () {
+                Navigator.of(context).pop();
+              },
+            )),
       ],
     );
   }

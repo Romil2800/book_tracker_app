@@ -1,3 +1,4 @@
+import 'package:book_tracker_app/constants/constants.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 class Book {
@@ -8,8 +9,11 @@ class Book {
   final String photoUrl;
   final String categories;
   final String publishedDate;
+  final double rating;
   final String description;
   final int pageCount;
+  final Timestamp startedReading;
+  final Timestamp finishedReading;
   final String userId;
 
   Book(
@@ -20,8 +24,11 @@ class Book {
       this.photoUrl,
       this.categories,
       this.publishedDate,
+      this.rating,
       this.description,
       this.pageCount,
+      this.startedReading,
+      this.finishedReading,
       this.userId});
 
   factory Book.fromDocument(QueryDocumentSnapshot data) {
@@ -36,6 +43,10 @@ class Book {
         publishedDate: info['published_date'],
         description: info['description'],
         pageCount: info['page_count'],
+        //rating: (info['rating']as num) double,
+        rating: parseDouble(info['rating']),
+        startedReading: info['started_reading_at'],
+        finishedReading: info['finished_reading_at'],
         userId: info['user_id']);
   }
 
@@ -48,8 +59,11 @@ class Book {
       'photoUrl': photoUrl,
       'categories': categories,
       'publishedDate': publishedDate,
+      'rating': rating,
       'description': description,
       'pageCount': pageCount,
+      'started_reading_at': startedReading,
+      'finished_reading_at': finishedReading,
       'userId': userId
     };
   }
